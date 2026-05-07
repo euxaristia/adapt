@@ -8,6 +8,10 @@ pub struct Cli {
 
     #[command(flatten)]
     pub flags: PacmanFlags,
+
+    /// Assume yes for all apt prompts (pass -y to apt)
+    #[arg(long, global = true)]
+    pub noconfirm: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]

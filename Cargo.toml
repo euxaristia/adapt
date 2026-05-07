@@ -8,6 +8,7 @@ description = "A paru-like wrapper for apt"
 [dependencies]
 clap = { version = "4.5", features = ["derive", "cargo"] }
 anyhow = "1.0"
+libc = "0.2"
 
 [profile.release]
 opt-level = 3

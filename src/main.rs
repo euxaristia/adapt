@@ -8,77 +8,81 @@ fn main() -> Result<()> {
     let cli = Cli::parse_args();
 
     match cli.command {
-        Some(cmd) => handle_subcommand(cmd)?,
-        None => handle_flags(&cli.flags)?,
+        Some(cmd) => handle_subcommand(cmd, cli.noconfirm)?,
+        None => handle_flags(&cli.flags, cli.noconfirm)?,
     }
 
     Ok(())
 }
 
-fn handle_subcommand(cmd: Command) -> Result<()> {
+fn handle_subcommand(cmd: Command, noconfirm: bool) -> Result<()> {
     match cmd {
-        Command::Update => apt::update()?,
+        Command::Update => apt::update(noconfirm)?,
         Command::Upgrade { full } => {
             if full {
-                apt::full_upgrade()?;
+                apt::full_upgrade(noconfirm)?;
             } else {
-                apt::upgrade()?;
+                apt::upgrade(noconfirm)?;
             }
         }
-        Command::FullUpgrade => apt::full_upgrade()?,
-        Command::Install { packages } => apt::install(&packages)?,
-        Command::Remove { packages } => apt::remove(&packages, false)?,
-        Command::Purge { packages } => apt::remove(&packages, true)?,
-        Command::Search { query } => apt::search(&query)?,
-        Command::Show { package } => apt::show(&package)?,
-        Command::Autoremove => apt::autoremove()?,
-        Command::Clean => apt::clean()?,
+        Command::FullUpgrade => apt::full_upgrade(noconfirm)?,
+        Command::Install { packages } => apt::install(&packages, noconfirm)?,
+        Command::Remove { packages } => apt::remove(&packages, false, noconfirm)?,
+        Command::Purge { packages } => apt::remove(&packages, true, noconfirm)?,
+        Command::Search { query } => apt::search(&query, noconfirm)?,
+        Command::Show { package } => apt::show(&package, noconfirm)?,
+        Command::Autoremove => apt::autoremove(noconfirm)?,
+        Command::Clean => apt::clean(noconfirm)?,
         Command::List { filter } => apt::list_installed(filter.as_deref())?,
         Command::EditSources => apt::edit_sources()?,
     }
     Ok(())
 }
 
-fn handle_flags(flags: &PacmanFlags) -> Result<()> {
-    // Default behavior: no flags -> update && upgrade (like paru with no args)
-    let no_operation = !flags.sync && !flags.remove && !flags.query && !flags.search && !flags.info && !flags.clean;
-    
+fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
+    let no_operation = !flags.sync
+        && !flags.remove
+        && !flags.query
+        && !flags.search
+        && !flags.info
+        && !flags.clean
+        && !flags.refresh
+        && !flags.upgrade;
+
     if no_operation && flags.targets.is_empty() {
         println!(":: adapter - AUR helper style wrapper for apt");
         println!(":: No operation specified, running update && upgrade...\n");
-        apt::update()?;
-        apt::upgrade()?;
+        apt::update(noconfirm)?;
+        apt::upgrade(noconfirm)?;
         return Ok(());
     }
 
     if flags.sync {
-        // -S operations
         if flags.search && !flags.targets.is_empty() {
-            // -Ss <query>
-            apt::search(&flags.targets.join(" "))?;
+            apt::search(&flags.targets.join(" "), noconfirm)?;
         } else if flags.info && !flags.targets.is_empty() {
-            // -Si <pkg>
-            apt::show(&flags.targets[0])?;
+            apt::show(&flags.targets[0], noconfirm)?;
         } else if flags.clean {
-            // -Sc
-            apt::clean()?;
+            apt::clean(noconfirm)?;
         } else if flags.refresh && flags.upgrade && flags.targets.is_empty() {
-            // -Syu
-            apt::update()?;
-            apt::upgrade()?;
+            apt::update(noconfirm)?;
+            apt::upgrade(noconfirm)?;
         } else if flags.refresh && flags.targets.is_empty() {
-            // -Sy
-            apt::update()?;
+            apt::update(noconfirm)?;
         } else if flags.upgrade && flags.targets.is_empty() {
-            // -Su
-            apt::upgrade()?;
+            apt::upgrade(noconfirm)?;
         } else if !flags.targets.is_empty() {
-            // -S <pkg>
-            apt::install(&flags.targets)?;
+            if flags.refresh {
+                apt::update(noconfirm)?;
+            }
+            if flags.upgrade {
+                apt::upgrade(noconfirm)?;
+            }
+            apt::install(&flags.targets, noconfirm)?;
         } else if flags.refresh {
-            apt::update()?;
+            apt::update(noconfirm)?;
         } else if flags.upgrade {
-            apt::upgrade()?;
+            apt::upgrade(noconfirm)?;
         } else {
             println!(":: Sync operation. Use -Syu to update & upgrade, -S <pkg> to install, -Ss <query> to search.");
         }
@@ -86,38 +90,34 @@ fn handle_flags(flags: &PacmanFlags) -> Result<()> {
         if flags.targets.is_empty() {
             anyhow::bail!("No packages specified for removal. Usage: adapter -R <package>");
         }
-        apt::remove(&flags.targets, false)?;
+        apt::remove(&flags.targets, false, noconfirm)?;
         if flags.recursive {
-            apt::autoremove()?;
+            apt::autoremove(noconfirm)?;
         }
     } else if flags.query {
-        if flags.search && !flags.targets.is_empty() {
-            // -Qs <query>
+        if flags.info && !flags.targets.is_empty() {
+            apt::show(&flags.targets[0], noconfirm)?;
+        } else if flags.search && !flags.targets.is_empty() {
             apt::list_installed(Some(&flags.targets.join(" ")))?;
         } else if flags.upgrade {
-            // -Qu
-            apt::list_upgrades()?;
+            apt::list_upgrades(noconfirm)?;
         } else if !flags.targets.is_empty() {
-            // -Q <pkg> or just show installed
             apt::list_installed(Some(&flags.targets.join(" ")))?;
         } else {
-            // -Q
             apt::list_installed(None)?;
         }
     } else if flags.search {
         if flags.targets.is_empty() {
             anyhow::bail!("No search query specified. Usage: adapter -Ss <query>");
         }
-        // -Ss <query>
-        apt::search(&flags.targets.join(" "))?;
+        apt::search(&flags.targets.join(" "), noconfirm)?;
     } else if flags.info {
         if flags.targets.is_empty() {
             anyhow::bail!("No package specified. Usage: adapter -Si <package>");
         }
-        // -Si <pkg>
-        apt::show(&flags.targets[0])?;
+        apt::show(&flags.targets[0], noconfirm)?;
     } else if flags.clean {
-        apt::clean()?;
+        apt::clean(noconfirm)?;
     } else {
         println!(":: adapter - AUR helper style wrapper for apt");
         println!(":: Try 'adapter --help' for usage information.");
