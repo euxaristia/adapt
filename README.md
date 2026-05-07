@@ -100,7 +100,3 @@ adapter -Qu
 - Rust 1.70+ (to build from source)
 - `apt` package manager (Ubuntu/Debian)
 - `sudo` privileges for write operations
-
-## License
-
-MIT
