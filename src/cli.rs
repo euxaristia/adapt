@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand, Args};
 
 #[derive(Parser, Debug)]
-#[command(name = "adapter", about = "A paru-like wrapper for apt", version, long_about = None)]
+#[command(name = "adapt", about = "paru, but for apt", version, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Command>,

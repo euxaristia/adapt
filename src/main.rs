@@ -50,7 +50,7 @@ fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
         && !flags.upgrade;
 
     if no_operation && flags.targets.is_empty() {
-        println!(":: adapter - AUR helper style wrapper for apt");
+        println!(":: adapt - paru, but for apt");
         println!(":: No operation specified, running update && upgrade...\n");
         apt::update(noconfirm)?;
         apt::upgrade(noconfirm)?;
@@ -88,7 +88,7 @@ fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
         }
     } else if flags.remove {
         if flags.targets.is_empty() {
-            anyhow::bail!("No packages specified for removal. Usage: adapter -R <package>");
+            anyhow::bail!("No packages specified for removal. Usage: adapt -R <package>");
         }
         apt::remove(&flags.targets, false, noconfirm)?;
         if flags.recursive {
@@ -108,19 +108,19 @@ fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
         }
     } else if flags.search {
         if flags.targets.is_empty() {
-            anyhow::bail!("No search query specified. Usage: adapter -Ss <query>");
+            anyhow::bail!("No search query specified. Usage: adapt -Ss <query>");
         }
         apt::search(&flags.targets.join(" "), noconfirm)?;
     } else if flags.info {
         if flags.targets.is_empty() {
-            anyhow::bail!("No package specified. Usage: adapter -Si <package>");
+            anyhow::bail!("No package specified. Usage: adapt -Si <package>");
         }
         apt::show(&flags.targets[0], noconfirm)?;
     } else if flags.clean {
         apt::clean(noconfirm)?;
     } else {
-        println!(":: adapter - AUR helper style wrapper for apt");
-        println!(":: Try 'adapter --help' for usage information.");
+        println!(":: adapt - paru, but for apt");
+        println!(":: Try 'adapt --help' for usage information.");
     }
 
     Ok(())
