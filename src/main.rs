@@ -1,5 +1,6 @@
 mod apt;
 mod cli;
+mod flatpak;
 
 use anyhow::Result;
 use cli::{Cli, Command, PacmanFlags};
@@ -54,6 +55,7 @@ fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
         println!(":: No operation specified, running update && upgrade...\n");
         apt::update(noconfirm)?;
         apt::upgrade(noconfirm)?;
+        flatpak::update(noconfirm)?;
         return Ok(());
     }
 
@@ -67,6 +69,7 @@ fn handle_flags(flags: &PacmanFlags, noconfirm: bool) -> Result<()> {
         } else if flags.refresh && flags.upgrade && flags.targets.is_empty() {
             apt::update(noconfirm)?;
             apt::upgrade(noconfirm)?;
+            flatpak::update(noconfirm)?;
         } else if flags.refresh && flags.targets.is_empty() {
             apt::update(noconfirm)?;
         } else if flags.upgrade && flags.targets.is_empty() {
