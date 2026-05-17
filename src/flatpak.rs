@@ -1,10 +1,11 @@
-use anyhow::Result;
-use std::process::Command;
+use anyhow::{Context, Result};
+use std::process::{Command, Stdio};
 
 pub fn update(noconfirm: bool) -> Result<()> {
-    // Check if flatpak is installed
-    let has_flatpak = Command::new("sh")
-        .args(["-c", "command -v flatpak"])
+    let has_flatpak = Command::new("flatpak")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
         .status()
         .map(|s| s.success())
         .unwrap_or(false);
@@ -19,11 +20,13 @@ pub fn update(noconfirm: bool) -> Result<()> {
     if noconfirm {
         cmd.arg("-y");
     }
-    cmd.stdin(std::process::Stdio::inherit())
-        .stdout(std::process::Stdio::inherit())
-        .stderr(std::process::Stdio::inherit());
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
 
-    let status = cmd.status()?;
+    let status = cmd
+        .status()
+        .with_context(|| "Failed to execute flatpak update")?;
     if !status.success() {
         anyhow::bail!("flatpak update failed with status: {}", status);
     }
