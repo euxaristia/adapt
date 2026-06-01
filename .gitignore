@@ -1,3 +1,5 @@
+/adapt
+/dist/
 /target
-**/*.rs.bk
-Cargo.lock
+*.test
+coverage.out

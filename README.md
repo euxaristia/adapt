@@ -1,6 +1,6 @@
 # adapt
 
-A [paru](https://github.com/morganamilo/paru)-like wrapper for `apt` on Ubuntu/Debian, written in Rust.
+A [paru](https://github.com/morganamilo/paru)-like wrapper for `apt` on Ubuntu/Debian, written in Go.
 
 Just like `paru` wraps `pacman` with a nicer interface, `adapt` wraps `sudo apt` with familiar AUR-helper-style commands.
 
@@ -18,8 +18,8 @@ Just like `paru` wraps `pacman` with a nicer interface, `adapt` wraps `sudo apt`
 ```bash
 git clone https://github.com/euxaristia/adapt.git
 cd adapt
-cargo build --release
-sudo cp target/release/adapt /usr/local/bin/
+go build -o adapt .
+sudo cp adapt /usr/local/bin/
 ```
 
 ## Usage
@@ -40,7 +40,7 @@ adapt
 | `adapt -Su` | Upgrade packages | `sudo apt upgrade` |
 | `adapt -S <pkg>` | Install package(s) | `sudo apt install <pkg>` |
 | `adapt -R <pkg>` | Remove package(s) | `sudo apt remove <pkg>` |
-| `adapt -R <pkg> --recursive` | Remove package(s) and unused deps | `sudo apt remove <pkg> && sudo apt autoremove` |
+| `adapt -Rs <pkg>` | Remove package(s) and unused deps | `sudo apt remove <pkg> && sudo apt autoremove` |
 | `adapt -Ss <query>` | Search for packages | `apt search <query>` |
 | `adapt -Si <pkg>` | Show package info | `apt show <pkg>` |
 | `adapt -Q` | List installed packages | `dpkg-query -W` |
@@ -97,6 +97,6 @@ adapt -Qu
 
 ## Requirements
 
-- Rust 1.70+ (to build from source)
+- Go 1.22+ (to build from source)
 - `apt` package manager (Ubuntu/Debian)
 - `sudo` privileges for write operations
