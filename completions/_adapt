@@ -1,0 +1,98 @@
+#compdef adapt
+
+_adapt_commands=(
+  'update:Update package lists'
+  'upgrade:Upgrade packages'
+  'full-upgrade:Full upgrade'
+  'install:Install packages'
+  'remove:Remove packages'
+  'purge:Purge packages'
+  'search:Search for packages'
+  'show:Show package details'
+  'autoremove:Remove unused dependencies'
+  'clean:Clean downloaded packages'
+  'list:List installed packages'
+  'edit-sources:Edit sources.list'
+)
+
+_adapt_installable_pkgs() {
+  local -a pkgs
+  pkgs=(${(f)"$(apt-cache --no-generate pkgnames "$PREFIX" 2>/dev/null)"})
+  compadd -a pkgs
+}
+
+_adapt_installed_pkgs() {
+  local -a pkgs
+  pkgs=(${(f)"$(dpkg-query -W -f='${Package}\n' "${PREFIX}*" 2>/dev/null)"})
+  compadd -a pkgs
+}
+
+_adapt() {
+  local context state state_descr line
+  typeset -A opt_args
+
+  _arguments -C \
+    '--noconfirm[Pass -y to apt/flatpak write operations]' \
+    '(-h --help)'{-h,--help}'[Show help]' \
+    '(-V --version)'{-V,--version}'[Show version]' \
+    '(-S --sync)'{-S,--sync}'[Sync or install packages]' \
+    '(-R --remove)'{-R,--remove}'[Remove packages]' \
+    '(-Q --query)'{-Q,--query}'[Query installed packages]' \
+    '(-s --search)'{-s,--search}'[Search modifier]' \
+    '(-i --info)'{-i,--info}'[Show package info modifier]' \
+    '(-y --refresh)'{-y,--refresh}'[Refresh package lists]' \
+    '(-u --upgrade)'{-u,--upgrade}'[Upgrade packages]' \
+    '(-c --clean)'{-c,--clean}'[Clean package cache]' \
+    '(-Rs --recursive)'{-Rs,--recursive}'[Remove packages, then autoremove unused dependencies]' \
+    '1: :->command_or_target' \
+    '*:: :->argument' || return
+
+  local op="" recursive_remove=""
+  if [[ " ${words[*]} " == *" -Rs "* ]]; then
+    recursive_remove=1
+  fi
+
+  if (( ${+opt_args[-S]} || ${+opt_args[--sync]} )); then
+    op=sync
+  elif (( ${+opt_args[-R]} || ${+opt_args[-Rs]} || ${+opt_args[--remove]} )); then
+    op=remove
+  elif (( ${+opt_args[-Q]} || ${+opt_args[--query]} )); then
+    op=query
+  fi
+
+  if [[ -n $op ]]; then
+    if [[ -z $recursive_remove ]] && (( ${+opt_args[-s]} || ${+opt_args[--search]} )); then
+      return
+    fi
+
+    case $op in
+      sync) _adapt_installable_pkgs ;;
+      remove|query) _adapt_installed_pkgs ;;
+    esac
+    return
+  fi
+
+  case $state in
+    command_or_target)
+      _describe -t commands 'adapt command' _adapt_commands
+      ;;
+    argument)
+      case $words[2] in
+        install|show|search)
+          _arguments '*: :_adapt_installable_pkgs'
+          ;;
+        remove|purge|list)
+          _arguments '*: :_adapt_installed_pkgs'
+          ;;
+        upgrade)
+          _arguments \
+            '(-f --full)'{-f,--full}'[Perform a full upgrade]' \
+            '--noconfirm[Pass -y to apt write operations]' \
+            '(-h --help)'{-h,--help}'[Show help]'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_adapt "$@"
