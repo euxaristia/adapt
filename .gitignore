@@ -3,3 +3,7 @@
 /target
 *.test
 coverage.out
+
+Cargo.lock
+.antigravitycli/
+
