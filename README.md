@@ -22,6 +22,26 @@ go build -o adapt .
 sudo cp adapt /usr/local/bin/
 ```
 
+### Shell completion
+
+Installs package-name completion for commands like `adapt install <TAB>`, `adapt remove <TAB>`, and pacman-style forms such as `adapt -S <TAB>`.
+
+**zsh:**
+
+```bash
+sudo ln -s "$PWD/completions/_adapt" /usr/local/share/zsh/site-functions/_adapt
+# then start a new shell, or: rm -f ~/.zcompdump && exec zsh
+```
+
+**bash:**
+
+```bash
+sudo ln -s "$PWD/completions/adapt.bash" /usr/share/bash-completion/completions/adapt
+# then start a new shell, or: source /usr/share/bash-completion/completions/adapt
+```
+
+Completions use `apt-cache --no-generate pkgnames` for installable packages and `dpkg-query -W` for installed packages.
+
 ## Usage
 
 ### Default behavior
