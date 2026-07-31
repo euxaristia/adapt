@@ -6,7 +6,7 @@ Just like `paru` wraps `pacman` with a nicer interface, `adapt` wraps `sudo apt`
 
 ## Features
 
-- **Zero-args default**: Running `adapt` with no arguments runs `sudo apt update && sudo apt upgrade`
+- **Zero-args default**: Running `adapt` with no arguments runs `sudo apt update && sudo apt upgrade`, then updates Flatpak/Snap packages if available
 - **Pacman-style flags**: Use familiar flags like `-Syu`, `-S`, `-R`, `-Ss`, `-Si`, `-Q`, `-Qu`
 - **Apt-style subcommands**: Also supports `install`, `remove`, `search`, `show`, `autoremove`, etc.
 - **Read-only commands without sudo**: `search`, `show`, `list` run without elevating privileges
@@ -35,9 +35,9 @@ adapt
 
 | Flag | Description | Equivalent apt command |
 |------|-------------|------------------------|
-| `adapt -Syu` | Update and upgrade | `sudo apt update && sudo apt upgrade` |
+| `adapt -Syu` | Update, upgrade, and refresh secondary package managers | `sudo apt update && sudo apt upgrade && flatpak update && sudo snap refresh` |
 | `adapt -Sy` | Update package lists | `sudo apt update` |
-| `adapt -Su` | Upgrade packages | `sudo apt upgrade` |
+| `adapt -Su` | Upgrade packages and refresh secondary package managers | `sudo apt upgrade && flatpak update && sudo snap refresh` |
 | `adapt -S <pkg>` | Install package(s) | `sudo apt install <pkg>` |
 | `adapt -R <pkg>` | Remove package(s) | `sudo apt remove <pkg>` |
 | `adapt -Rs <pkg>` | Remove package(s) and unused deps | `sudo apt remove <pkg> && sudo apt autoremove` |
@@ -53,8 +53,8 @@ adapt
 | Command | Description | Equivalent apt command |
 |---------|-------------|------------------------|
 | `adapt update` | Update package lists | `sudo apt update` |
-| `adapt upgrade` | Upgrade packages | `sudo apt upgrade` |
-| `adapt full-upgrade` | Full upgrade (dist-upgrade) | `sudo apt full-upgrade` |
+| `adapt upgrade` | Upgrade packages and refresh secondary package managers | `sudo apt upgrade && flatpak update && sudo snap refresh` |
+| `adapt full-upgrade` | Full upgrade and refresh secondary package managers | `sudo apt full-upgrade && flatpak update && sudo snap refresh` |
 | `adapt install <pkg>` | Install package(s) | `sudo apt install <pkg>` |
 | `adapt remove <pkg>` | Remove package(s) | `sudo apt remove <pkg>` |
 | `adapt purge <pkg>` | Purge package(s) | `sudo apt purge <pkg>` |

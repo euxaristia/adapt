@@ -108,14 +108,14 @@ func runSubcommand(name string, args []string, noconfirm bool) error {
 			return err
 		}
 		if full {
-			return fullUpgradePackages(noconfirm)
+			return fullUpgradePackagesWithExtras(noconfirm)
 		}
-		return upgradePackages(noconfirm)
+		return upgradePackagesWithExtras(noconfirm)
 	case "full-upgrade":
 		if err := requireNoArgs(name, args); err != nil {
 			return err
 		}
-		return fullUpgradePackages(noconfirm)
+		return fullUpgradePackagesWithExtras(noconfirm)
 	case "install":
 		if len(args) == 0 {
 			return errors.New("no packages specified for installation")
@@ -362,13 +362,13 @@ func runSync(flags pacmanFlags, noconfirm bool) error {
 		return cleanPackageCache()
 	}
 	if flags.refresh && flags.upgrade && !hasTargets {
-		return runUpdateUpgradeAndFlatpak(noconfirm)
+		return runUpdateUpgradeAndExtras(noconfirm)
 	}
 	if flags.refresh && !hasTargets {
 		return updatePackages(noconfirm)
 	}
 	if flags.upgrade && !hasTargets {
-		return upgradePackages(noconfirm)
+		return upgradePackagesWithExtras(noconfirm)
 	}
 	if hasTargets {
 		if flags.refresh {
@@ -377,7 +377,7 @@ func runSync(flags pacmanFlags, noconfirm bool) error {
 			}
 		}
 		if flags.upgrade {
-			if err := upgradePackages(noconfirm); err != nil {
+			if err := upgradePackagesWithExtras(noconfirm); err != nil {
 				return err
 			}
 		}
@@ -387,7 +387,7 @@ func runSync(flags pacmanFlags, noconfirm bool) error {
 		return updatePackages(noconfirm)
 	}
 	if flags.upgrade {
-		return upgradePackages(noconfirm)
+		return upgradePackagesWithExtras(noconfirm)
 	}
 
 	fmt.Println(":: Sync operation. Use -Syu to update & upgrade, -S <pkg> to install, -Ss <query> to search.")
@@ -430,17 +430,31 @@ func runDefault(noconfirm bool) error {
 	fmt.Println(":: adapt - paru, but for apt")
 	fmt.Println(":: No operation specified, running update && upgrade...")
 	fmt.Println()
-	return runUpdateUpgradeAndFlatpak(noconfirm)
+	return runUpdateUpgradeAndExtras(noconfirm)
 }
 
-func runUpdateUpgradeAndFlatpak(noconfirm bool) error {
+func runUpdateUpgradeAndExtras(noconfirm bool) error {
 	if err := updatePackages(noconfirm); err != nil {
 		return err
 	}
 	if err := upgradePackages(noconfirm); err != nil {
 		return err
 	}
-	return updateFlatpaks(noconfirm)
+	return updateSecondaryPackages(noconfirm)
+}
+
+func upgradePackagesWithExtras(noconfirm bool) error {
+	if err := upgradePackages(noconfirm); err != nil {
+		return err
+	}
+	return updateSecondaryPackages(noconfirm)
+}
+
+func fullUpgradePackagesWithExtras(noconfirm bool) error {
+	if err := fullUpgradePackages(noconfirm); err != nil {
+		return err
+	}
+	return updateSecondaryPackages(noconfirm)
 }
 
 func updatePackages(noconfirm bool) error {
@@ -463,7 +477,7 @@ func installPackages(packages []string, noconfirm bool) error {
 		return errors.New("no packages specified for installation")
 	}
 
-	fmt.Printf(":: Installing packages: %s\n", strings.Join(packages, " "))
+	fmt.Printf(":: Installing package(s): %s\n", strings.Join(packages, " "))
 	args := append([]string{"install", "--"}, packages...)
 	return runApt(args, true, noconfirm)
 }
@@ -547,6 +561,13 @@ func editSources() error {
 	return runCommand("editor", "sudo", []string{"sh", "-c", shellCommand})
 }
 
+func updateSecondaryPackages(noconfirm bool) error {
+	if err := updateFlatpaks(noconfirm); err != nil {
+		return err
+	}
+	return updateSnaps()
+}
+
 func updateFlatpaks(noconfirm bool) error {
 	if !hasFlatpak() {
 		return nil
@@ -560,8 +581,27 @@ func updateFlatpaks(noconfirm bool) error {
 	return runCommand("flatpak update", "flatpak", args)
 }
 
+func updateSnaps() error {
+	if !hasSnap() {
+		return nil
+	}
+
+	fmt.Println(":: Updating snap packages...")
+	if isRoot() {
+		return runCommand("snap refresh", "snap", []string{"refresh"})
+	}
+	return runCommand("snap refresh", "sudo", []string{"snap", "refresh"})
+}
+
 func hasFlatpak() bool {
 	cmd := exec.Command("flatpak", "--version")
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	return cmd.Run() == nil
+}
+
+func hasSnap() bool {
+	cmd := exec.Command("snap", "--version")
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
 	return cmd.Run() == nil
@@ -623,9 +663,9 @@ Commands:
   edit-sources          edit /etc/apt/sources.list with $EDITOR
 
 Pacman-style flags:
-  -Syu                  update, upgrade, then update flatpaks if available
+  -Syu                  update, upgrade, then update flatpaks/snaps if available
   -Sy                   update package lists
-  -Su                   upgrade packages
+  -Su                   upgrade packages, then update flatpaks/snaps if available
   -S <pkg...>           install packages
   -R <pkg...>           remove packages
   -Rs <pkg...>          remove packages, then autoremove unused dependencies
